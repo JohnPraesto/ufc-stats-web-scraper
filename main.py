@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import pandas
 import time
+from datetime import datetime, timedelta
 
 events_url = "http://www.ufcstats.com/statistics/events/completed?page="
 page_number = 1
@@ -9,8 +10,30 @@ response_events_page = requests.get(events_url + str(page_number))
 events_soup = BeautifulSoup(response_events_page.text, "html.parser")
 all_events_on_this_page = events_soup.find_all("tr")
 all_fights_list = []
+todays_date = datetime.now()
 
-for event in all_events_on_this_page[4:]:
+for event in all_events_on_this_page:
+
+    date = event.find("span", class_="b-statistics__date")
+
+    # The first couple of tr-tags does not contain event info.
+    # And there is one tr-tag that is a future event.
+    # This method returns True if the tag has valid event info.
+    # Returns False if tr tag does not have valid event info.
+    if date:
+        date_text = date.text.strip()
+        date_object = datetime.strptime(date_text, "%B %d, %Y")
+        if todays_date < date_object:
+            print("date was from future")
+            continue
+    else:
+        print("date was None")
+        continue
+
+    input("STOP FINISHED")
+
+
+
     event_info = event.find("a", class_="b-link b-link_style_black")
     print(f"Entering {event_info.text.strip()}")
     time.sleep(1)
@@ -56,3 +79,4 @@ all_fights_df.to_csv("all_ufc_fights.csv", index=False)
 
 
 # TODO do so that it does all pages of events
+# TODO Why is date and location within quotationmarks
