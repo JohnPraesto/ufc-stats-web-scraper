@@ -3,10 +3,9 @@ import requests
 import pandas
 import time
 from datetime import datetime
-import csv
 
 events_url = "http://www.ufcstats.com/statistics/events/completed?page="
-page_number = 1
+page_number = 27
 all_fights_list = []
 todays_date = datetime.now()
 go = True
@@ -18,18 +17,8 @@ try: # Try to load the existing fights
 
 except FileNotFoundError: # If the file doesn't exist, start with an empty DataFrame
     existing_fights_df = pandas.DataFrame(columns=["outcome", "fighter_1", "fighter_2", "date", "location"])
-    existing_fights_df.to_csv("all_ufc_fights.csv", index=False)
     latest_event_in_the_csv = datetime(1, 1, 1) # Later in the program this date is compared to actual event dates. If the event date is later than this variable, the event will be handled.
     print(latest_event_in_the_csv)
-
-# # Open the CSV file
-# with open("all_ufc_fights.csv", "r") as all_fights_file:
-#     reader = csv.DictReader(all_fights_file)  # Reads the file as a dictionary
-#     first_row = next(reader)  # Get the first row
-
-# # Extract the date from the first row
-# latest_event_in_the_csv = datetime.strptime(first_row["date"], "%B %d, %Y")
-# print(latest_event_in_the_csv)
 
 while go:
 
@@ -107,25 +96,14 @@ while go:
 
     page_number += 1
 
-
-
-# # DANGER! NEW INFO SHOULD ONLY BE APPENDED TO A CSV, NOT CREATE (AND REPLACE).
-# all_fights_list.reverse()
-# all_fights_df = pandas.DataFrame(all_fights_list)
-# print(all_fights_df)
-# # all_fights_df.to_csv("all_ufc_fights.csv", index=False) # THIS IS THE OLD ONE
-# all_fights_df.to_csv("all_ufc_fights.csv", mode='a', header=False, index=False)
-
-# We should only create an updated csv if there actually was new events to handle
+# We need only to create an updated csv if there actually was new events to handle
 if len(all_fights_list) > 0:
-    # Load existing fights from the CSV
-    existing_fights_df = pandas.read_csv("all_ufc_fights.csv")
 
     # Convert new fights to a DataFrame
-    all_fights_df = pandas.DataFrame(all_fights_list)
+    new_fights_df = pandas.DataFrame(all_fights_list)
 
     # Concatenate the new fights to the existing ones
-    all_fights_df = pandas.concat([all_fights_df, existing_fights_df], ignore_index=True)
+    all_fights_df = pandas.concat([new_fights_df, existing_fights_df], ignore_index=True)
 
     # Write back to the CSV
     all_fights_df.to_csv("all_ufc_fights.csv", index=False)
@@ -134,5 +112,3 @@ else:
     print("Did not create new csv. No Need.")
 
 print("program finished")
-
-# TODO Make so that it saves into the csv only events that are not already there
