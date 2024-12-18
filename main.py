@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 events_url = "http://www.ufcstats.com/statistics/events/completed?page="
-page_number = 27
+page_number = 1
 all_fights_list = []
 todays_date = datetime.now()
 go = True
@@ -29,8 +29,8 @@ while go:
     print(events_url + str(page_number))
     print(f"length of all_events_on_this_page is {len(all_events_on_this_page)}")
 
-    # When there is no events on the page there will only be two empty tr tags
-    # Need better exit condition?
+    # The first two tr-tags on the events page are empty.
+    # When there is no real events on the page there will only be two empty tr tags.
     if len(all_events_on_this_page) <= 2:
         break
 
@@ -38,7 +38,6 @@ while go:
 
         date = event.find("span", class_="b-statistics__date")
 
-        # HMM. BUT THESE CHECKS ONLY NEED TO OCCUR LIKE... ON THE FIRST PAGE.
         # The first couple of tr-tags does not contain event info.
         # And there is one tr-tag that is a future event.
         # This if/else-statement makes the for-loop skip invalid tr-tags
@@ -48,7 +47,7 @@ while go:
             if todays_date < date_object:
                 print("date was from future")
                 continue
-            if latest_event_in_the_csv == date_object:
+            if latest_event_in_the_csv == date_object: # If the date of the latest event in your already existing csv is the same as the date of the event about to be scraped, then that means your csv is up to date, and program exits.
                 print("Your csv is up to date.")
                 go = False
                 break
