@@ -3,13 +3,35 @@ import requests
 import pandas
 import time
 from datetime import datetime
+import csv
 
 events_url = "http://www.ufcstats.com/statistics/events/completed?page="
 page_number = 1
 all_fights_list = []
 todays_date = datetime.now()
+go = True
 
-while True:
+try: # Try to load the existing fights
+    existing_fights_df = pandas.read_csv("all_ufc_fights.csv")
+    latest_event_in_the_csv = datetime.strptime(existing_fights_df.loc[0, "date"], "%B %d, %Y")
+    print(f"The date from the top row is: {latest_event_in_the_csv}")
+
+except FileNotFoundError: # If the file doesn't exist, start with an empty DataFrame
+    existing_fights_df = pandas.DataFrame(columns=["outcome", "fighter_1", "fighter_2", "date", "location"])
+    existing_fights_df.to_csv("all_ufc_fights.csv", index=False)
+    latest_event_in_the_csv = datetime(1, 1, 1) # Later in the program this date is compared to actual event dates. If the event date is later than this variable, the event will be handled.
+    print(latest_event_in_the_csv)
+
+# # Open the CSV file
+# with open("all_ufc_fights.csv", "r") as all_fights_file:
+#     reader = csv.DictReader(all_fights_file)  # Reads the file as a dictionary
+#     first_row = next(reader)  # Get the first row
+
+# # Extract the date from the first row
+# latest_event_in_the_csv = datetime.strptime(first_row["date"], "%B %d, %Y")
+# print(latest_event_in_the_csv)
+
+while go:
 
     response_events_page = requests.get(events_url + str(page_number))
     events_soup = BeautifulSoup(response_events_page.text, "html.parser")
@@ -21,13 +43,13 @@ while True:
     # When there is no events on the page there will only be two empty tr tags
     # Need better exit condition?
     if len(all_events_on_this_page) <= 2:
-        print("program finished")
         break
 
     for event in all_events_on_this_page:
 
         date = event.find("span", class_="b-statistics__date")
 
+        # HMM. BUT THESE CHECKS ONLY NEED TO OCCUR LIKE... ON THE FIRST PAGE.
         # The first couple of tr-tags does not contain event info.
         # And there is one tr-tag that is a future event.
         # This if/else-statement makes the for-loop skip invalid tr-tags
@@ -37,6 +59,10 @@ while True:
             if todays_date < date_object:
                 print("date was from future")
                 continue
+            if latest_event_in_the_csv == date_object:
+                print("Your csv is up to date.")
+                go = False
+                break
         else:
             print("date was None")
             continue
@@ -81,8 +107,32 @@ while True:
 
     page_number += 1
 
-all_fights_df = pandas.DataFrame(all_fights_list)
-print(all_fights_df)
-all_fights_df.to_csv("all_ufc_fights.csv", index=False)
 
-# TODO Why is date and location within quotationmarks
+
+# # DANGER! NEW INFO SHOULD ONLY BE APPENDED TO A CSV, NOT CREATE (AND REPLACE).
+# all_fights_list.reverse()
+# all_fights_df = pandas.DataFrame(all_fights_list)
+# print(all_fights_df)
+# # all_fights_df.to_csv("all_ufc_fights.csv", index=False) # THIS IS THE OLD ONE
+# all_fights_df.to_csv("all_ufc_fights.csv", mode='a', header=False, index=False)
+
+# We should only create an updated csv if there actually was new events to handle
+if len(all_fights_list) > 0:
+    # Load existing fights from the CSV
+    existing_fights_df = pandas.read_csv("all_ufc_fights.csv")
+
+    # Convert new fights to a DataFrame
+    all_fights_df = pandas.DataFrame(all_fights_list)
+
+    # Concatenate the new fights to the existing ones
+    all_fights_df = pandas.concat([all_fights_df, existing_fights_df], ignore_index=True)
+
+    # Write back to the CSV
+    all_fights_df.to_csv("all_ufc_fights.csv", index=False)
+    print("A new updated csv was created")
+else:
+    print("Did not create new csv. No Need.")
+
+print("program finished")
+
+# TODO Make so that it saves into the csv only events that are not already there
