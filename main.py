@@ -16,7 +16,7 @@ try: # Try to load the existing fights
     print(f"The date from the top row is: {latest_event_in_the_csv}")
 
 except FileNotFoundError: # If the file doesn't exist, start with an empty DataFrame
-    existing_fights_df = pandas.DataFrame(columns=["outcome", "fighter_1", "fighter_2", "date", "location"])
+    existing_fights_df = pandas.DataFrame(columns=["outcome", "fighter_1", "fighter_2", "date", "location", "method"])
     latest_event_in_the_csv = datetime(1, 1, 1) # Later in the program this date is compared to actual event dates. If the event date is later than this variable, the event will be handled.
     print(latest_event_in_the_csv)
 
@@ -82,20 +82,22 @@ while go:
 
                 # This class contains the names of the fighters
                 fighter = fight.find_all("a", class_="b-link b-link_style_black")
+                method = fight.find_all("td")
 
                 fight_details = {
                 "outcome": outcome.text.strip(),
                 "fighter_1": fighter[0].text.strip(),
                 "fighter_2": fighter[1].text.strip(),
                 "date": date.text.strip(),
-                "location": location.text.strip()
+                "location": location.text.strip(),
+                "method": method[7].find("p").text.strip() # The 8th td-tag of every table row contains the method of victory within its first p-tag
                 }
 
                 all_fights_list.append(fight_details)
 
     page_number += 1
 
-# We need only to create an updated csv if there actually was new events to handle
+# We need only to create an updated csv if there actually are new events to handle
 if len(all_fights_list) > 0:
 
     # Convert new fights to a DataFrame
